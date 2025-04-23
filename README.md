@@ -14,10 +14,10 @@
 - 🎨 **Interfaz colorida** con rich.console
 
 ## 📋 Requisitos del sistema
-- 🐍 Python 3.10+ (Recomendado 3.11+)
-- 🔑 Cuenta de [Google Gemini](https://aistudio.google.com/)
-- 🔒 Permisos de `sudo` para instalación global
-- 📦 Dependencias: `rich`, `google-genai`
+- Python 3.10+ (Recomendado 3.11+)
+- Cuenta de [Google Gemini](https://aistudio.google.com/)
+- Permisos de `sudo` para instalación global
+- Dependencias: `rich`, `google-genai`
 
 ## 🛠️ Instalación paso a paso
 
@@ -34,14 +34,14 @@ python3 manexplainer.py install
 ```
 
 ## ⚙️ Configuración inicial
-1. 🔐 Obtén tu API Key de [Google AI Studio](https://aistudio.google.com/)
-2. ✏️ Edita `manexplainer.py`:
+1. Obtén tu API Key de [Google AI Studio](https://aistudio.google.com/)
+2. Edita `manexplainer.py`:
 ```python
 api_key = "TU_API_KEY_AQUÍ"  # 🔑 Línea 43
 ```
-3. 💾 Guarda los cambios
+3. *Guarda los cambios*
 
-## 🎮 Modos de uso básico
+## 🚀 Modos de uso básico
 
 ```bash
 # Formato básico
@@ -80,9 +80,9 @@ sudo python3 manexplainer.py install
 ```
 
 ### 🌐 Problemas de conexión API
-- ✅ Verifica tu conexión a Internet
-- 🔄 Revisa tu cuota en [Google AI Studio](https://aistudio.google.com/)
-- 🗝️ Confirma que la API Key sea correcta
+- Verifica tu conexión a Internet
+- Revisa tu cuota en [Google AI Studio](https://aistudio.google.com/)
+- Confirma que la API Key sea correcta
 
 ### 🐍 Errores de Python
 - Actualiza pip: `python3 -m pip install --upgrade pip`
