@@ -1,6 +1,14 @@
 # 🚀 ManExplainer - Tu asistente de terminal con IA
 
-![ManExplainer Demo](manexplainer.png)  
+![ManExplainer Demo](manexplainer.png)
+
+## Ejemplos reales
+**1.**
+![ManExplainer Preview 1](1.png)
+
+**2.**
+![ManExplainer Preview 2](2.png)
+
 
 > ***ManExplainer** es tu asistente técnico 🤖 que combina la potencia de los manuales Linux (`man`) con la inteligencia artificial de Gemini para darte explicaciones claras y precisas en tiempo real ⚡*
 
