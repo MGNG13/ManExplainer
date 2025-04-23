@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-from os import system, path, chmod
-from subprocess import check_output, STDOUT, CalledProcessError, run
+from os import system, path
+from subprocess import check_output, STDOUT, CalledProcessError
 from argparse import ArgumentParser
 from sys import exit, argv
 from rich.console import Console
 from rich.markdown import Markdown
 from time import sleep, time
-import threading
-import asyncio
 from google import genai
-import os
+from asyncio import get_event_loop
+
 
 console = Console()
 
@@ -75,8 +74,8 @@ def install_manexplainer():
         console.print(f"\n[bold red]✗ Error durante la instalación: {str(e)}[/bold red]")
         return False
 
-async def send_request_with_gemini(prompt, max_retries=3, timeout_seconds=30):
-    """Send request to Gemini AI model with timeout and retry logic"""
+async def send_request_with_gemini(prompt, max_retries=3):
+    """Send request to Gemini AI model with retry logic (timeouts removed)"""
     retries = 0
     final_response = ""
     
@@ -92,57 +91,25 @@ async def send_request_with_gemini(prompt, max_retries=3, timeout_seconds=30):
                 delayed_print(f"Reintentando solicitud ({retries}/{max_retries})...")
             
             final_response = ""
-            request_failed = False
-            request_done = False
-            
-            # Create an event for timeout control
-            timeout_event = threading.Event()
-            
-            # Function to check timeout
-            def check_timeout():
-                sleep(timeout_seconds)
-                if not timeout_event.is_set() and not request_done:
-                    nonlocal request_failed
-                    request_failed = True
-                    delayed_print("\nTiempo de espera agotado. Cancelando solicitud...")
-            
-            # Start timeout thread
-            timeout_thread = threading.Thread(target=check_timeout)
-            timeout_thread.daemon = True
-            timeout_thread.start()
             
             try:
                 async with client.aio.live.connect(model=model, config=config) as session:
                     await session.send_client_content(
                         turns={"role": "user", "parts": [{"text": prompt}]}, turn_complete=True
                     )
-                    # Reset timeout on connection
-                    timeout_event.set()
-                    timeout_event.clear()
                     if final_response == '':
                         clear_screen()
                     async for response in session.receive():
-                        if request_failed:
-                            break
                         if response.text is not None:
-                            # Reset timeout on data received
-                            timeout_event.set()
-                            timeout_event.clear()
                             print(response.text, end="", flush=True)
                             final_response += response.text
-                    request_done = True
-                    timeout_event.set()
                 
+                # If we have a response, exit the loop
+                if final_response:
+                    return final_response
+                    
             except Exception as e:
                 delayed_print(f"Error en la solicitud: {str(e)}")
-                request_failed = True
-            
-            # If request completed successfully and we have a response, exit the loop
-            if request_done and final_response:
-                return final_response
-                
-            # If failed due to timeout or error, increment retry counter
-            if request_failed or not final_response:
                 retries += 1
                 if retries >= max_retries:
                     delayed_print(f"Error después de {max_retries} intentos. No se pudo obtener respuesta.")
@@ -175,7 +142,59 @@ def print_help():
     console.print("\nPara instalar:")
     console.print("  python3 manexplainer.py install")
 
-async def main():
+def prepare_prompt(command, query):
+    """Prepare the prompt for the AI based on command execution or manual"""
+    command_str = ' '.join(command)
+    command_name = command[0]
+    
+    # Verificar si el comando tiene argumentos para ejecutarlo en lugar de usar man
+    if len(command) > 1:
+        delayed_print(f"Ejecutando comando: {command_str}")
+        try:
+            # Ejecutar el comando completo con sus argumentos
+            cmd_output = check_output(command, stderr=STDOUT)
+            cmd_text = cmd_output.decode('utf-8')
+            if len(cmd_text.split('\n')) > 1000:
+                delayed_print('Limitando tamaño de output a 2500 lineas `\\n`.')
+                cmd_text = '\n'.join(cmd_text.split('\n')[:1000]) + "\n\n[Output truncated because it was too long.]"
+            delayed_print(f'Tamaño de output de {len(cmd_text.split('\n'))} lineas.')
+            sleep(2)
+            # Armar prompt con la salida del comando + consulta
+            prompt = f"""Tengo la siguiente salida del comando `{command_str}`:
+
+{cmd_text}
+
+Mi pregunta es: {query}
+Por favor se conciso, muy técnico y resuelve mi duda usando la menor cantidad de tokens posible, se técnico también.
+"""
+            return prompt
+        except CalledProcessError as e:
+            print(f"Error ejecutando '{command_str}':\n{e.output.decode('utf-8')}")
+            exit(1)
+    else:
+        # Obtener salida del comando man si solo hay un argumento
+        delayed_print(f"Obteniendo manual para: {command_name}")
+        try:
+            man_output = check_output(['man', command_name], stderr=STDOUT)
+            man_text = man_output.decode('utf-8')
+            if len(man_text.split('\n')) > 2500:
+                delayed_print('Limitando tamaño de manual a 2500 lineas `\\n`.')
+                man_text = '\n'.join(man_text.split('\n')[:2500]) + "\n\n[Output truncated because it was too long.]"
+            delayed_print(f'Tamaño de manual de {len(cmd_text.split('\n'))} lineas.')
+            sleep(2)
+            prompt = f"""Tengo el siguiente manual de Linux para el comando `{command_name}`:
+
+{man_text}
+
+Mi pregunta es: {query}
+Por favor se muy técnico y resuelve mi duda usando la menor cantidad de tokens posible, se técnico también.
+"""
+            return prompt
+        except CalledProcessError as e:
+            print(f"Error ejecutando 'man {command_name}':\n{e.output.decode('utf-8')}")
+            exit(1)
+
+def main():
     # Check if running with "install" argument
     if len(argv) > 1 and argv[1] == "install":
         install_manexplainer()
@@ -207,53 +226,17 @@ async def main():
         exit(1)
 
     command = ''.join(args.command).split(' ')
-    command_name = command[0]
     query = args.query[0]
 
-    # Verificar si el comando tiene argumentos para ejecutarlo en lugar de usar man
-    if len(command) > 1:
-        delayed_print(f"Ejecutando comando: {' '.join(command)}")
-        try:
-            # Ejecutar el comando completo con sus argumentos
-            cmd_output = check_output(command, stderr=STDOUT)
-            cmd_text = cmd_output.decode('utf-8')
-            
-            # Armar prompt con la salida del comando + consulta
-            prompt = f"""Tengo la siguiente salida del comando `{' '.join(command)}`:
-
-{cmd_text}
-
-Mi pregunta es: {query}
-Por favor se conciso, muy técnico y resuelve mi duda usando la menor cantidad de tokens posible, se técnico también.
-"""
-        except CalledProcessError as e:
-            print(f"Error ejecutando '{' '.join(command)}':\n{e.output.decode('utf-8')}")
-            exit(1)
-    else:
-        # Obtener salida del comando man si solo hay un argumento
-        delayed_print(f"Obteniendo manual para: {command_name}")
-        try:
-            man_output = check_output(['man', command_name], stderr=STDOUT)
-            man_text = man_output.decode('utf-8')
-            if len(man_text) > 2000:
-                man_text = man_text[:2000] + "\n\n[Output truncated because it was too long.]"
-            # Armar prompt con la documentación + consulta
-            prompt = f"""Tengo el siguiente manual de Linux para el comando `{command_name}`:
-
-{man_text}
-
-Mi pregunta es: {query}
-Por favor se muy técnico y resuelve mi duda usando la menor cantidad de tokens posible, se técnico también.
-"""
-        except CalledProcessError as e:
-            print(f"Error ejecutando 'man {command_name}':\n{e.output.decode('utf-8')}")
-            exit(1)
+    # Primero ejecutar el comando y preparar el prompt (parte síncrona)
+    prompt = prepare_prompt(command, query)
 
     clear_screen()
     delayed_print('Analizando tu pregunta...\n\n')
 
-    # Enviar solicitud con manejo de timeout y reintentos
-    final_response = await send_request_with_gemini(prompt)
+    # Después ejecutar la parte asíncrona para interactuar con Gemini
+    loop = get_event_loop()
+    final_response = loop.run_until_complete(send_request_with_gemini(prompt))
 
     # Mostrar salida final con Markdown y encabezado
     clear_screen()
@@ -264,4 +247,4 @@ Por favor se muy técnico y resuelve mi duda usando la menor cantidad de tokens 
     console.print(f"\n[bold green]⏱ Tiempo de respuesta:[/bold green] {elapsed:.2f} segundos\n")
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    main()
