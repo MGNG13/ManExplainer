@@ -116,26 +116,20 @@ async def send_request_with_gemini(prompt, max_retries=3, timeout_seconds=30):
                     await session.send_client_content(
                         turns={"role": "user", "parts": [{"text": prompt}]}, turn_complete=True
                     )
-                    
                     # Reset timeout on connection
                     timeout_event.set()
                     timeout_event.clear()
-                    
                     if final_response == '':
                         clear_screen()
-                    
                     async for response in session.receive():
                         if request_failed:
                             break
-                            
                         if response.text is not None:
                             # Reset timeout on data received
                             timeout_event.set()
                             timeout_event.clear()
-                            
                             print(response.text, end="", flush=True)
                             final_response += response.text
-                    
                     request_done = True
                     timeout_event.set()
                 
@@ -241,14 +235,15 @@ Por favor se conciso, muy técnico y resuelve mi duda usando la menor cantidad d
         try:
             man_output = check_output(['man', command_name], stderr=STDOUT)
             man_text = man_output.decode('utf-8')
-            
+            if len(man_text) > 2000:
+                man_text = man_text[:2000] + "\n\n[Output truncated because it was too long.]"
             # Armar prompt con la documentación + consulta
             prompt = f"""Tengo el siguiente manual de Linux para el comando `{command_name}`:
 
 {man_text}
 
 Mi pregunta es: {query}
-Por favor se conciso, muy técnico y resuelve mi duda usando la menor cantidad de tokens posible, se técnico también.
+Por favor se muy técnico y resuelve mi duda usando la menor cantidad de tokens posible, se técnico también.
 """
         except CalledProcessError as e:
             print(f"Error ejecutando 'man {command_name}':\n{e.output.decode('utf-8')}")
