@@ -180,7 +180,7 @@ Por favor se conciso, muy técnico y resuelve mi duda usando la menor cantidad d
             if len(man_text.split('\n')) > 2500:
                 delayed_print('Limitando tamaño de manual a 2500 lineas `\\n`.')
                 man_text = '\n'.join(man_text.split('\n')[:2500]) + "\n\n[Output truncated because it was too long.]"
-            delayed_print(f'Tamaño de manual de {len(cmd_text.split('\n'))} lineas.')
+            delayed_print(f'Tamaño de manual de {len(man_text.split('\n'))} lineas.')
             sleep(2)
             prompt = f"""Tengo el siguiente manual de Linux para el comando `{command_name}`:
 
