@@ -27,6 +27,14 @@
 - Permisos de `sudo` para instalación global
 - Dependencias: `rich`, `google-genai`
 
+## ⚙️ Configuración inicial
+1. Obtén tu API Key de [Google AI Studio](https://aistudio.google.com/)
+2. Edita `manexplainer.py`:
+```python
+api_key = "TU_API_KEY_AQUÍ"  # 🔑 Línea 43
+```
+3. *Guarda los cambios*
+
 ## 🛠️ Instalación paso a paso
 
 ```bash
@@ -40,14 +48,6 @@ pip install -r requirements.txt
 # 3️⃣ Instalar como comando global (requiere sudo)
 python3 manexplainer.py install
 ```
-
-## ⚙️ Configuración inicial
-1. Obtén tu API Key de [Google AI Studio](https://aistudio.google.com/)
-2. Edita `manexplainer.py`:
-```python
-api_key = "TU_API_KEY_AQUÍ"  # 🔑 Línea 43
-```
-3. *Guarda los cambios*
 
 ## 🚀 Modos de uso básico
 
