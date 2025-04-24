@@ -31,7 +31,7 @@
 1. Obtén tu API Key de [Google AI Studio](https://aistudio.google.com/)
 2. Edita `manexplainer.py`:
 ```python
-api_key = "TU_API_KEY_AQUÍ"  # 🔑 Línea 43
+api_key = "YOUR_GEMINI_API_KEY"  # 🔑 Línea 83
 ```
 3. *Guarda los cambios*
 
