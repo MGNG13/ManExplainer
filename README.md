@@ -39,7 +39,7 @@ api_key = "YOUR_GEMINI_API_KEY"  # 🔑 Línea 83
 
 ```bash
 # 1️⃣ Clonar repositorio
-git clone https://github.com/tu_usuario/manexplainer.git
+git clone https://github.com/MGNG13/manexplainer.git
 cd manexplainer
 
 # 2️⃣ Instalar dependencias
